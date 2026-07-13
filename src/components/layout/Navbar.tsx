@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Menu, X, Bell, MessageCircle, User, LogOut, Building2, CircleDollarSign } from 'lucide-react';
+import { Menu, X, Bell, MessageCircle, User, LogOut, Building2, CircleDollarSign, Calendar, Video, Wallet, FileText, Users } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Avatar } from '../ui/Avatar';
 import { Badge } from '../ui/Badge';
@@ -53,6 +53,18 @@ export const Navbar: React.FC = () => {
       path: profileRoute,
     }
   ];
+
+ const mobileExtraLinks = user ? [
+    { icon: <Calendar size={18} />, text: 'Calendar', path: '/calendar' },
+    { icon: <Video size={18} />, text: 'Video Call', path: '/video-call' },
+    { icon: <Wallet size={18} />, text: 'Payments', path: '/payments' },
+    user.role === 'entrepreneur'
+      ? { icon: <CircleDollarSign size={18} />, text: 'Find Investors', path: '/investors' }
+      : { icon: <Users size={18} />, text: 'Find Startups', path: '/entrepreneurs' },
+    user.role === 'entrepreneur'
+      ? { icon: <FileText size={18} />, text: 'Documents', path: '/documents' }
+      : { icon: <FileText size={18} />, text: 'Deals', path: '/deals' },
+  ] : [];
   
   return (
     <nav className="bg-white shadow-md">
@@ -158,6 +170,17 @@ export const Navbar: React.FC = () => {
                   {navLinks.map((link, index) => (
                     <Link
                       key={index}
+                      to={link.path}
+                      className="flex items-center px-3 py-2 text-base font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-md"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <span className="mr-3">{link.icon}</span>
+                      {link.text}
+                    </Link>
+                  ))}
+                  {mobileExtraLinks.map((link, index) => (
+                    <Link
+                      key={`extra-${index}`}
                       to={link.path}
                       className="flex items-center px-3 py-2 text-base font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50 rounded-md"
                       onClick={() => setIsMenuOpen(false)}
