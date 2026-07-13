@@ -3,7 +3,9 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Menu, X, Bell, MessageCircle, User, LogOut, Building2, CircleDollarSign } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Avatar } from '../ui/Avatar';
+import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
+
 
 export const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -100,6 +102,9 @@ export const Navbar: React.FC = () => {
                     status={user.isOnline ? 'online' : 'offline'}
                   />
                   <span className="text-sm font-medium text-gray-700">{user.name}</span>
+                  <Badge variant={user.role === 'investor' ? 'primary' : 'success'} size="sm" className="capitalize">
+                    {user.role}
+                  </Badge>
                 </Link>
               </div>
             ) : (

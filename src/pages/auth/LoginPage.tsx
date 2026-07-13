@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, CircleDollarSign, Building2, LogIn, AlertCircle } from 'lucide-react';
+import { User, CircleDollarSign, Building2, LogIn, AlertCircle, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -12,6 +12,10 @@ export const LoginPage: React.FC = () => {
   const [role, setRole] = useState<UserRole>('entrepreneur');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [step, setStep] = useState<'credentials' | 'otp'>('credentials');
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [otpError, setOtpError] = useState<string | null>(null);
+  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
   
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -23,12 +27,41 @@ export const LoginPage: React.FC = () => {
     
     try {
       await login(email, password, role);
-      // Redirect based on user role
-      navigate(role === 'entrepreneur' ? '/dashboard/entrepreneur' : '/dashboard/investor');
+      // Move to 2FA step instead of navigating immediately
+      setIsLoading(false);
+      setStep('otp');
     } catch (err) {
       setError((err as Error).message);
       setIsLoading(false);
     }
+  };
+
+  const handleOtpChange = (index: number, value: string) => {
+    if (!/^\d*$/.test(value)) return;
+    const next = [...otp];
+    next[index] = value.slice(-1);
+    setOtp(next);
+    setOtpError(null);
+    if (value && index < 5) {
+      otpRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace' && !otp[index] && index > 0) {
+      otpRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleVerifyOtp = (e: React.FormEvent) => {
+    e.preventDefault();
+    const code = otp.join('');
+    if (code.length !== 6) {
+      setOtpError('Enter all 6 digits');
+      return;
+    }
+    // Mock verification — any 6-digit code is accepted for demo purposes
+    navigate(role === 'entrepreneur' ? '/dashboard/entrepreneur' : '/dashboard/investor');
   };
   
   // For demo purposes, pre-filled credentials
@@ -54,16 +87,18 @@ export const LoginPage: React.FC = () => {
             </svg>
           </div>
         </div>
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          Sign in to Business Nexus
+       <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          {step === 'credentials' ? 'Sign in to Business Nexus' : 'Verify your identity'}
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600">
-          Connect with investors and entrepreneurs
+          {step === 'credentials' ? 'Connect with investors and entrepreneurs' : `Enter the 6-digit code we sent to ${email || 'your device'}`}
         </p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+          {step === 'credentials' ? (
+          <>
           {error && (
             <div className="mb-4 bg-error-50 border border-error-500 text-error-700 px-4 py-3 rounded-md flex items-start">
               <AlertCircle size={18} className="mr-2 mt-0.5" />
@@ -193,7 +228,7 @@ export const LoginPage: React.FC = () => {
               </div>
             </div>
             
-            <div className="mt-2 text-center">
+         <div className="mt-2 text-center">
               <p className="text-sm text-gray-600">
                 Don't have an account?{' '}
                 <Link to="/register" className="font-medium text-primary-600 hover:text-primary-500">
@@ -202,8 +237,57 @@ export const LoginPage: React.FC = () => {
               </p>
             </div>
           </div>
+          </>
+          ) : (
+            <form className="space-y-6" onSubmit={handleVerifyOtp}>
+              <div className="flex justify-center">
+                <div className="w-14 h-14 bg-primary-50 rounded-full flex items-center justify-center">
+                  <ShieldCheck size={28} className="text-primary-600" />
+                </div>
+              </div>
+
+              {otpError && (
+                <div className="bg-error-50 border border-error-500 text-error-700 px-4 py-3 rounded-md flex items-start">
+                  <AlertCircle size={18} className="mr-2 mt-0.5" />
+                  <span>{otpError}</span>
+                </div>
+              )}
+
+              <div className="flex justify-center gap-2">
+                {otp.map((digit, i) => (
+                  <input
+                    key={i}
+                    ref={el => (otpRefs.current[i] = el)}
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={1}
+                    value={digit}
+                    onChange={e => handleOtpChange(i, e.target.value)}
+                    onKeyDown={e => handleOtpKeyDown(i, e)}
+                    className="w-11 h-12 text-center text-lg font-semibold rounded-md border border-gray-300 focus:border-primary-500 focus:ring-2 focus:ring-primary-500 focus:ring-opacity-50"
+                  />
+                ))}
+              </div>
+
+              <p className="text-xs text-center text-gray-400">
+                This is a demo — any 6 digits will work.
+              </p>
+
+              <Button type="submit" fullWidth leftIcon={<ShieldCheck size={18} />}>
+                Verify & Continue
+              </Button>
+
+              <button
+                type="button"
+                onClick={() => setStep('credentials')}
+                className="w-full text-sm text-gray-500 hover:text-gray-700 text-center"
+              >
+                ← Back to sign in
+              </button>
+            </form>
+          )}
         </div>
       </div>
     </div>
   );
-};
+};   
